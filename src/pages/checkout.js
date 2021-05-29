@@ -5,11 +5,31 @@ import { selectItems, selectTotal } from "../slices/basketSlice";
 import CheckoutProduct from "../components/CheckoutProduct";
 import Currency from "react-currency-formatter"
 import { useSession } from "next-auth/client";
+import {loadStripe} from "@stripe/stripe-js";
+import axios from "axios";
+const stripePromise = loadStripe(process.env.stripe_public_key);
 
 function Checkout() {
     const [session] = useSession();
     const items = useSelector(selectItems);
     const total = useSelector(selectTotal);
+
+    const createCheckoutSession = async () => {
+        const stripe = await stripePromise;
+
+        // call the backend to create a checkout session.....
+        const checkoutSession = await axios.post('/api/create-checkout-session', {
+            items: items,
+            email: session.user.email,
+        }); 
+
+        // REdirect user/custome to Stripe checkout
+        const result = await stripe.redirectToCheckout({
+            sessionId: checkoutSession.data.id,
+        });
+
+        if (result.error) alert(result.error.message);
+    };
 
     return (
         <div className="bg-gray-100">
@@ -31,17 +51,17 @@ function Checkout() {
                                 }
                             </h1>
 
-                            {items.map((items, i) => (
+                            {items.map((item, i) => (
                                 <CheckoutProduct
                                     key={i}
-                                    id = {items.id}
-                                    title = {items.title}
-                                    rating = {items.rating}
-                                    price = {items.price}
-                                    description = {items.description}
-                                    category = {items.description}
-                                    image = {items.image}
-                                    hasPrime = {items.hasPrime}
+                                    id = {item.id}
+                                    title = {item.title}
+                                    rating = {item.rating}
+                                    price = {item.price}
+                                    description = {item.description}
+                                    category = {item.category}
+                                    image = {item.image}
+                                    hasPrime = {item.hasPrime}
                                 />
                             ))}
                         </div>
@@ -58,6 +78,8 @@ function Checkout() {
                                 </h2>
 
                                 <button
+                                  roll="link"
+                                  onClick={createCheckoutSession}
                                   disabled={!session}
                                   className={`button mt-2 ${!session && 'from-gray-300 to-gray-500 border-gray-200 text-gray-300 cursor-not-allowed'}`}>
                                     {!session ? "Sign in to checkout" : "Proceed to checkout"}
