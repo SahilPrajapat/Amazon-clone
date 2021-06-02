@@ -1,3 +1,3 @@
 # Amazon-clone
 
-https://amazon-clone-git-main-sahilprajapat.vercel.app/
+https://amazon-clone-rose.vercel.app/
